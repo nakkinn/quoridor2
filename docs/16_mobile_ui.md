@@ -341,3 +341,5 @@ if (uiState.cpuThinking) {
 9. CPU対戦実装
 10. Undo機能実装（モード別）
 11. アニメーション実装
+
+123
