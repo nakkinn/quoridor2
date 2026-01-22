@@ -1,0 +1,398 @@
+/* ========================================
+   Quoridor Mobile CSS
+   モダン・ミニマルデザイン
+   ======================================== */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #1a1a2e;
+  color: #eee;
+  min-height: 100vh;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ========================================
+   ポップアップダイアログ
+   ======================================== */
+
+#popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+#popup-dialog {
+  background: #16213e;
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  min-width: 280px;
+}
+
+.popup-section {
+  margin-bottom: 25px;
+}
+
+/* モード選択ボタン */
+.mode-buttons, .turn-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.mode-btn, .turn-btn {
+  background: #0f3460;
+  border: 2px solid transparent;
+  border-radius: 15px;
+  padding: 15px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mode-btn.selected, .turn-btn.selected {
+  border-color: #e94560;
+  background: #1a1a4e;
+}
+
+.mode-btn:active, .turn-btn:active {
+  transform: scale(0.95);
+}
+
+.mode-icon {
+  font-size: 24px;
+}
+
+.mode-vs {
+  color: #888;
+  font-size: 14px;
+}
+
+/* 先手/後手ボタン */
+.turn-btn {
+  flex-direction: column;
+  padding: 15px 25px;
+}
+
+.turn-color {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.turn-color.blue {
+  background: #3498db;
+  box-shadow: 0 0 15px rgba(52, 152, 219, 0.5);
+}
+
+.turn-color.red {
+  background: #e74c3c;
+  box-shadow: 0 0 15px rgba(231, 76, 60, 0.5);
+}
+
+.turn-btn span {
+  margin-top: 8px;
+  font-size: 18px;
+  color: #888;
+}
+
+/* 開始ボタン */
+.start-btn {
+  background: #e94560;
+  border: none;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  font-size: 24px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 5px 20px rgba(233, 69, 96, 0.4);
+}
+
+.start-btn:active {
+  transform: scale(0.9);
+}
+
+/* ========================================
+   ゲーム画面
+   ======================================== */
+
+#game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  height: 100vh;
+}
+
+/* ヘッダー */
+#header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 10px;
+  margin-bottom: 10px;
+}
+
+.header-spacer {
+  flex: 1;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.icon-btn {
+  background: #0f3460;
+  border: none;
+  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.icon-btn:active {
+  transform: scale(0.9);
+  background: #1a4a7a;
+}
+
+.icon-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* プレイヤー情報 */
+.player-info {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 8px 15px;
+  gap: 10px;
+}
+
+.player-icon {
+  font-size: 28px;
+}
+
+.walls-display {
+  display: flex;
+  gap: 4px;
+}
+
+.wall-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #8B4513;
+}
+
+.wall-dot.used {
+  background: #333;
+}
+
+/* ゴールライン */
+.goal-line {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.goal-line.blue {
+  background: linear-gradient(90deg, rgba(52, 152, 219, 0.3), rgba(52, 152, 219, 0.6), rgba(52, 152, 219, 0.3));
+}
+
+.goal-line.red {
+  background: linear-gradient(90deg, rgba(231, 76, 60, 0.3), rgba(231, 76, 60, 0.6), rgba(231, 76, 60, 0.3));
+}
+
+/* キャンバス */
+#canvas-wrapper {
+  margin: 5px 0;
+}
+
+#canvas-wrapper canvas {
+  border-radius: 10px;
+}
+
+/* 壁ドラッグ領域 */
+.wall-area {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  margin-top: 10px;
+}
+
+.wall-zone {
+  flex: 1;
+  height: 70px;
+  border-radius: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: grab;
+  transition: all 0.2s ease;
+}
+
+.wall-zone:active {
+  cursor: grabbing;
+  transform: scale(0.98);
+}
+
+.vertical-zone {
+  background: linear-gradient(135deg, #2d2d44, #1a1a2e);
+}
+
+.horizontal-zone {
+  background: linear-gradient(135deg, #1a1a2e, #2d2d44);
+}
+
+.wall-zone.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* 壁アイコン */
+.wall-icon {
+  background: #8B4513;
+  border-radius: 3px;
+}
+
+.wall-icon.vertical {
+  width: 8px;
+  height: 40px;
+}
+
+.wall-icon.horizontal {
+  width: 40px;
+  height: 8px;
+}
+
+/* ========================================
+   CPU思考中アニメーション
+   ======================================== */
+
+#thinking-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 500;
+  pointer-events: none;
+}
+
+.thinking-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.thinking-dots span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #e94560;
+  animation: thinking-bounce 1.4s infinite ease-in-out both;
+}
+
+.thinking-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.thinking-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes thinking-bounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ========================================
+   ドラッグ中の壁プレビュー
+   ======================================== */
+
+.wall-preview {
+  position: fixed;
+  background: rgba(139, 69, 19, 0.7);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.wall-preview.vertical {
+  width: 10px;
+  height: 60px;
+}
+
+.wall-preview.horizontal {
+  width: 60px;
+  height: 10px;
+}
+
+.wall-preview.invalid {
+  background: rgba(231, 76, 60, 0.5);
+}
+
+/* ========================================
+   レスポンシブ調整
+   ======================================== */
+
+@media (max-height: 700px) {
+  .wall-zone {
+    height: 55px;
+  }
+
+  .player-info {
+    padding: 5px 15px;
+  }
+
+  .goal-line {
+    height: 6px;
+  }
+}
+
+@media (min-width: 500px) {
+  #game-container {
+    max-width: 450px;
+    margin: 0 auto;
+  }
+}

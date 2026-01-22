@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quoridor</title>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-container">
+    <div>
+      <div id="canvas-wrapper"></div>
+      <div id="controls">
+        <button id="btn-start">スタート</button>
+        <button id="btn-edit">編集モード</button>
+        <label style="margin-left: 15px;">
+          <input type="checkbox" id="chk-first-player">
+          P2先手
+        </label>
+      </div>
+    </div>
+    <div id="state-panel">
+      <h3>内部状態</h3>
+      <label>状態文字列:</label>
+      <textarea id="state-input" rows="2"></textarea>
+      <div class="state-buttons">
+        <button id="btn-copy">コピー</button>
+        <button id="btn-apply">反映</button>
+      </div>
+      <label style="margin-top: 15px;">整形表示:</label>
+      <pre id="state-formatted"></pre>
+    </div>
+  </div>
+
+  <script src="js/constants.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/board.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

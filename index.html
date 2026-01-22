@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Quoridor</title>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
+  <link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+  <!-- ポップアップダイアログ -->
+  <div id="popup-overlay">
+    <div id="popup-dialog">
+      <!-- モード選択 -->
+      <div class="popup-section">
+        <div class="mode-buttons">
+          <button id="btn-mode-1p" class="mode-btn selected">
+            <span class="mode-icon">🤖</span>
+            <span class="mode-vs">vs</span>
+            <span class="mode-icon">👤</span>
+          </button>
+          <button id="btn-mode-2p" class="mode-btn">
+            <span class="mode-icon">👤</span>
+            <span class="mode-vs">vs</span>
+            <span class="mode-icon">👤</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 先手/後手選択（1人用のみ表示） -->
+      <div id="turn-selection" class="popup-section">
+        <div class="turn-buttons">
+          <button id="btn-first" class="turn-btn selected">
+            <div class="turn-color blue"></div>
+            <span>▲</span>
+          </button>
+          <button id="btn-second" class="turn-btn">
+            <div class="turn-color red"></div>
+            <span>▲</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 開始ボタン -->
+      <button id="btn-start-game" class="start-btn">▶</button>
+    </div>
+  </div>
+
+  <!-- ゲーム画面 -->
+  <div id="game-container">
+    <!-- ヘッダー -->
+    <div id="header">
+      <div class="header-spacer"></div>
+      <div class="header-buttons">
+        <button id="btn-restart" class="icon-btn">🔄</button>
+        <button id="btn-undo" class="icon-btn">↩️</button>
+      </div>
+    </div>
+
+    <!-- 上側プレイヤー情報（2人用の壁領域） -->
+    <div id="top-wall-area" class="wall-area hidden">
+      <div class="wall-zone vertical-zone">
+        <div class="wall-icon vertical"></div>
+      </div>
+      <div class="wall-zone horizontal-zone">
+        <div class="wall-icon horizontal"></div>
+      </div>
+    </div>
+
+    <!-- 上側プレイヤー情報 -->
+    <div id="top-player-info" class="player-info">
+      <span id="top-player-icon" class="player-icon">🤖</span>
+      <div id="top-walls" class="walls-display"></div>
+    </div>
+
+    <!-- 上側ゴールライン -->
+    <div id="top-goal-line" class="goal-line red"></div>
+
+    <!-- キャンバス -->
+    <div id="canvas-wrapper"></div>
+
+    <!-- 下側ゴールライン -->
+    <div id="bottom-goal-line" class="goal-line blue"></div>
+
+    <!-- 下側プレイヤー情報 -->
+    <div id="bottom-player-info" class="player-info">
+      <span id="bottom-player-icon" class="player-icon">👤</span>
+      <div id="bottom-walls" class="walls-display"></div>
+    </div>
+
+    <!-- 下側壁領域 -->
+    <div id="bottom-wall-area" class="wall-area">
+      <div class="wall-zone vertical-zone" id="drag-vertical">
+        <div class="wall-icon vertical"></div>
+      </div>
+      <div class="wall-zone horizontal-zone" id="drag-horizontal">
+        <div class="wall-icon horizontal"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CPU思考中オーバーレイ -->
+  <div id="thinking-overlay" class="hidden">
+    <div class="thinking-dots">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+
+  <script src="js/constants.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/board.js"></script>
+  <script src="js/renderer_mobile.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/main_mobile.js"></script>
+</body>
+</html>

@@ -1,0 +1,274 @@
+// モバイル用描画クラス
+class MobileRenderer {
+  constructor(p5Instance) {
+    this.p = p5Instance;
+    this.boardSize = 0;
+    this.cellSize = 0;
+    this.offsetX = 0;
+    this.offsetY = 0;
+    this.wallThickness = 6;
+    this.pieceRadius = 0;
+  }
+
+  // キャンバスサイズに合わせて計算
+  calculateSizes(canvasSize) {
+    this.boardSize = canvasSize;
+    this.cellSize = canvasSize / BOARD_SIZE;
+    this.offsetX = 0;
+    this.offsetY = 0;
+    this.pieceRadius = this.cellSize * 0.35;
+    this.wallThickness = Math.max(4, this.cellSize * 0.12);
+  }
+
+  // ゲーム全体を描画
+  draw(state, mobileState) {
+    const p = this.p;
+
+    // 背景
+    p.background('#1a1a2e');
+
+    // 盤面
+    this.drawBoard();
+
+    // 壁
+    this.drawWalls(state);
+
+    // 移動可能マス
+    if (state.mode === 'play' && state.winner === null && !mobileState.cpuThinking) {
+      this.drawValidMoves(state, mobileState);
+    }
+
+    // 駒
+    this.drawPieces(state, mobileState);
+
+    // ドラッグ中の壁プレビュー
+    if (mobileState.draggingWall) {
+      this.drawDraggingWall(mobileState);
+    }
+
+    // 勝者表示
+    if (state.winner !== null) {
+      this.drawWinner(state.winner);
+    }
+  }
+
+  // 盤面を描画
+  drawBoard() {
+    const p = this.p;
+
+    // 背景
+    p.fill('#2d2d44');
+    p.noStroke();
+    p.rect(0, 0, this.boardSize, this.boardSize, 8);
+
+    // グリッド線
+    p.stroke('#404060');
+    p.strokeWeight(1);
+
+    for (let i = 0; i <= BOARD_SIZE; i++) {
+      const pos = i * this.cellSize;
+      p.line(pos, 0, pos, this.boardSize);
+      p.line(0, pos, this.boardSize, pos);
+    }
+  }
+
+  // 壁を描画
+  drawWalls(state) {
+    const p = this.p;
+
+    for (let wy = 0; wy < WALL_GRID_SIZE; wy++) {
+      for (let wx = 0; wx < WALL_GRID_SIZE; wx++) {
+        const wallType = state.walls[wy][wx];
+        if (wallType !== WALL_DIR.NONE) {
+          this.drawWallAt(wx, wy, wallType, '#8B4513');
+        }
+      }
+    }
+  }
+
+  // 指定位置に壁を描画
+  drawWallAt(wx, wy, wallType, color, alpha = 255) {
+    const p = this.p;
+
+    if (alpha < 255) {
+      p.fill(p.color(color).levels[0], p.color(color).levels[1], p.color(color).levels[2], alpha);
+    } else {
+      p.fill(color);
+    }
+    p.noStroke();
+
+    const cx = (wx + 1) * this.cellSize;
+    const cy = (wy + 1) * this.cellSize;
+    const wallLen = this.cellSize * 2 - this.wallThickness;
+
+    if (wallType === WALL_DIR.VERTICAL) {
+      p.rect(
+        cx - this.wallThickness / 2,
+        cy - this.cellSize + this.wallThickness / 2,
+        this.wallThickness,
+        wallLen,
+        3
+      );
+    } else if (wallType === WALL_DIR.HORIZONTAL) {
+      p.rect(
+        cx - this.cellSize + this.wallThickness / 2,
+        cy - this.wallThickness / 2,
+        wallLen,
+        this.wallThickness,
+        3
+      );
+    }
+  }
+
+  // 移動可能マスを描画
+  drawValidMoves(state, mobileState) {
+    const p = this.p;
+    const validMoves = getValidMoves(state);
+
+    for (const move of validMoves) {
+      const px = move.x * this.cellSize + this.cellSize / 2;
+      const py = move.y * this.cellSize + this.cellSize / 2;
+
+      // ハイライト
+      p.fill(255, 200, 0, 100);
+      p.noStroke();
+      p.rect(
+        move.x * this.cellSize + 4,
+        move.y * this.cellSize + 4,
+        this.cellSize - 8,
+        this.cellSize - 8,
+        8
+      );
+
+      // マーカー
+      p.fill(255, 200, 0, 180);
+      p.circle(px, py, this.cellSize * 0.3);
+    }
+  }
+
+  // 駒を描画
+  drawPieces(state, mobileState) {
+    const p = this.p;
+
+    for (let i = 0; i < 2; i++) {
+      const player = state.players[i];
+
+      // ドラッグ中の駒
+      if (mobileState.draggingPiece === i && mobileState.dragPos) {
+        this.drawPieceAt(
+          mobileState.dragPos.x - this.offsetX,
+          mobileState.dragPos.y - this.offsetY,
+          i,
+          state.currentPlayer === i,
+          0.9
+        );
+      } else {
+        const px = player.x * this.cellSize + this.cellSize / 2;
+        const py = player.y * this.cellSize + this.cellSize / 2;
+        this.drawPieceAt(px, py, i, state.currentPlayer === i, 1);
+      }
+    }
+  }
+
+  // 駒を指定位置に描画
+  drawPieceAt(px, py, playerIndex, isCurrentPlayer, scale) {
+    const p = this.p;
+    const color = playerIndex === 0 ? '#3498db' : '#e74c3c';
+    const radius = this.pieceRadius * scale;
+
+    // 影
+    p.fill(0, 0, 0, 50);
+    p.noStroke();
+    p.circle(px + 2, py + 2, radius * 2);
+
+    // 本体
+    p.fill(color);
+    if (isCurrentPlayer) {
+      p.stroke('#fff');
+      p.strokeWeight(3);
+    } else {
+      p.noStroke();
+    }
+    p.circle(px, py, radius * 2);
+  }
+
+  // ドラッグ中の壁を描画
+  drawDraggingWall(mobileState) {
+    const { wallType, previewPos, isValid } = mobileState.draggingWall;
+
+    if (previewPos) {
+      const color = isValid ? '#8B4513' : '#e74c3c';
+      this.drawWallAt(previewPos.wx, previewPos.wy, wallType, color, 180);
+    }
+  }
+
+  // 勝者表示
+  drawWinner(winner) {
+    const p = this.p;
+    const color = winner === 0 ? '#3498db' : '#e74c3c';
+
+    p.fill(0, 0, 0, 180);
+    p.noStroke();
+    p.rect(0, 0, this.boardSize, this.boardSize);
+
+    // 王冠
+    p.textSize(48);
+    p.textAlign(p.CENTER, p.CENTER);
+    p.text('👑', this.boardSize / 2, this.boardSize / 2 - 30);
+
+    // 勝者の色の円
+    p.fill(color);
+    p.circle(this.boardSize / 2, this.boardSize / 2 + 30, 40);
+  }
+
+  // ピクセル座標からセル座標に変換
+  pixelToCell(px, py) {
+    const x = Math.floor(px / this.cellSize);
+    const y = Math.floor(py / this.cellSize);
+    return { x, y };
+  }
+
+  // ピクセル座標から壁座標に変換
+  pixelToWallPos(px, py) {
+    const wx = Math.round(px / this.cellSize) - 1;
+    const wy = Math.round(py / this.cellSize) - 1;
+    return { wx, wy };
+  }
+
+  // セル座標からピクセル座標（中心）に変換
+  cellToPixel(x, y) {
+    return {
+      px: x * this.cellSize + this.cellSize / 2,
+      py: y * this.cellSize + this.cellSize / 2
+    };
+  }
+
+  // 壁座標からピクセル座標に変換
+  wallPosToPixel(wx, wy) {
+    return {
+      px: (wx + 1) * this.cellSize,
+      py: (wy + 1) * this.cellSize
+    };
+  }
+
+  // 駒がタップされたか判定
+  isPieceTapped(px, py, playerX, playerY) {
+    const piecePx = playerX * this.cellSize + this.cellSize / 2;
+    const piecePy = playerY * this.cellSize + this.cellSize / 2;
+    const dist = Math.sqrt((px - piecePx) ** 2 + (py - piecePy) ** 2);
+    return dist <= this.pieceRadius * 1.5;
+  }
+
+  // 移動可能マスがタップされたか判定
+  getValidMoveTapped(px, py, validMoves) {
+    for (const move of validMoves) {
+      const movePx = move.x * this.cellSize + this.cellSize / 2;
+      const movePy = move.y * this.cellSize + this.cellSize / 2;
+      const dist = Math.sqrt((px - movePx) ** 2 + (py - movePy) ** 2);
+      if (dist <= this.cellSize * 0.4) {
+        return move;
+      }
+    }
+    return null;
+  }
+}

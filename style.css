@@ -1,0 +1,121 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background-color: #f0f0f0;
+}
+
+#game-container {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+#canvas-wrapper {
+  flex-shrink: 0;
+}
+
+#canvas-wrapper canvas {
+  display: block;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+#state-panel {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  min-width: 320px;
+  max-width: 400px;
+}
+
+#state-panel h3 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+#state-panel label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+  font-size: 13px;
+  color: #555;
+}
+
+#state-input {
+  width: 100%;
+  font-family: monospace;
+  font-size: 11px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+  min-height: 60px;
+}
+
+#state-formatted {
+  background: #f8f8f8;
+  padding: 10px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 10px;
+  white-space: pre-wrap;
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  margin-top: 10px;
+}
+
+.state-buttons {
+  margin-top: 10px;
+}
+
+#state-panel button {
+  padding: 6px 12px;
+  margin-right: 8px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: white;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+#state-panel button:hover {
+  background: #f0f0f0;
+}
+
+#controls {
+  margin-top: 15px;
+  display: flex;
+  gap: 10px;
+}
+
+#controls button {
+  padding: 10px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  background-color: #3498db;
+  color: white;
+  transition: background-color 0.2s;
+}
+
+#controls button:hover {
+  background-color: #2980b9;
+}
+
+#btn-reset {
+  background-color: #e74c3c;
+}
+
+#btn-reset:hover {
+  background-color: #c0392b;
+}
