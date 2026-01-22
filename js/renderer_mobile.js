@@ -24,8 +24,8 @@ class MobileRenderer {
   draw(state, mobileState) {
     const p = this.p;
 
-    // 背景
-    p.background('#1a1a2e');
+    // 背景（白基調）
+    p.background('#f5f5f5');
 
     // 盤面
     this.drawBoard();
@@ -33,9 +33,14 @@ class MobileRenderer {
     // 壁
     this.drawWalls(state);
 
-    // 移動可能マス
-    if (state.mode === 'play' && state.winner === null && !mobileState.cpuThinking) {
-      this.drawValidMoves(state, mobileState);
+    // 配置フェーズ
+    if (mobileState.placementPhase) {
+      this.drawPlacementPhase(state, mobileState);
+    } else {
+      // 移動可能マス（壁ドラッグ中は非表示）
+      if (state.mode === 'play' && state.winner === null && !mobileState.cpuThinking && !mobileState.draggingWall) {
+        this.drawValidMoves(state, mobileState);
+      }
     }
 
     // 駒
@@ -56,13 +61,13 @@ class MobileRenderer {
   drawBoard() {
     const p = this.p;
 
-    // 背景
-    p.fill('#2d2d44');
+    // 背景（白基調）
+    p.fill('#ffffff');
     p.noStroke();
     p.rect(0, 0, this.boardSize, this.boardSize, 8);
 
     // グリッド線
-    p.stroke('#404060');
+    p.stroke('#ccc');
     p.strokeWeight(1);
 
     for (let i = 0; i <= BOARD_SIZE; i++) {
@@ -120,6 +125,54 @@ class MobileRenderer {
     }
   }
 
+  // 配置フェーズの描画
+  drawPlacementPhase(state, mobileState) {
+    const p = this.p;
+    const placingPlayer = mobileState.placingPlayer;
+
+    // 配置可能な9箇所をハイライト
+    const y = placingPlayer === 0 ? 0 : 8;
+    for (let x = 0; x < BOARD_SIZE; x++) {
+      const px = x * this.cellSize + this.cellSize / 2;
+      const py = y * this.cellSize + this.cellSize / 2;
+
+      // 選択中かどうか
+      const isSelected = mobileState.selectedMove &&
+                         mobileState.selectedMove.x === x &&
+                         mobileState.selectedMove.y === y;
+
+      if (isSelected) {
+        // 選択中: 明るいハイライト
+        p.fill(255, 220, 0, 200);
+        p.noStroke();
+        p.rect(
+          x * this.cellSize + 2,
+          y * this.cellSize + 2,
+          this.cellSize - 4,
+          this.cellSize - 4,
+          8
+        );
+
+        p.fill(255, 220, 0, 255);
+        p.circle(px, py, this.cellSize * 0.5);
+      } else {
+        // 非選択: 通常のハイライト
+        p.fill(255, 200, 0, 80);
+        p.noStroke();
+        p.rect(
+          x * this.cellSize + 4,
+          y * this.cellSize + 4,
+          this.cellSize - 8,
+          this.cellSize - 8,
+          8
+        );
+
+        p.fill(255, 200, 0, 150);
+        p.circle(px, py, this.cellSize * 0.25);
+      }
+    }
+  }
+
   // 移動可能マスを描画
   drawValidMoves(state, mobileState) {
     const p = this.p;
@@ -129,20 +182,42 @@ class MobileRenderer {
       const px = move.x * this.cellSize + this.cellSize / 2;
       const py = move.y * this.cellSize + this.cellSize / 2;
 
-      // ハイライト
-      p.fill(255, 200, 0, 100);
-      p.noStroke();
-      p.rect(
-        move.x * this.cellSize + 4,
-        move.y * this.cellSize + 4,
-        this.cellSize - 8,
-        this.cellSize - 8,
-        8
-      );
+      // 選択中の移動先かどうか
+      const isSelected = mobileState.selectedMove &&
+                         mobileState.selectedMove.x === move.x &&
+                         mobileState.selectedMove.y === move.y;
 
-      // マーカー
-      p.fill(255, 200, 0, 180);
-      p.circle(px, py, this.cellSize * 0.3);
+      if (isSelected) {
+        // 選択中: より明るいハイライト
+        p.fill(255, 220, 0, 200);
+        p.noStroke();
+        p.rect(
+          move.x * this.cellSize + 2,
+          move.y * this.cellSize + 2,
+          this.cellSize - 4,
+          this.cellSize - 4,
+          8
+        );
+
+        // 大きなマーカー
+        p.fill(255, 220, 0, 255);
+        p.circle(px, py, this.cellSize * 0.5);
+      } else {
+        // 非選択: 通常のハイライト
+        p.fill(255, 200, 0, 80);
+        p.noStroke();
+        p.rect(
+          move.x * this.cellSize + 4,
+          move.y * this.cellSize + 4,
+          this.cellSize - 8,
+          this.cellSize - 8,
+          8
+        );
+
+        // 小さなマーカー
+        p.fill(255, 200, 0, 150);
+        p.circle(px, py, this.cellSize * 0.25);
+      }
     }
   }
 
@@ -153,15 +228,19 @@ class MobileRenderer {
     for (let i = 0; i < 2; i++) {
       const player = state.players[i];
 
-      // ドラッグ中の駒
-      if (mobileState.draggingPiece === i && mobileState.dragPos) {
-        this.drawPieceAt(
-          mobileState.dragPos.x - this.offsetX,
-          mobileState.dragPos.y - this.offsetY,
-          i,
-          state.currentPlayer === i,
-          0.9
-        );
+      // 配置されていない駒は盤面外に表示
+      if (!state.piecePlaced[i]) {
+        // 盤面外の位置（y=-1 または y=9）
+        const outY = i === 0 ? -1 : 9;
+        const px = player.x * this.cellSize + this.cellSize / 2;
+        const py = outY * this.cellSize + this.cellSize / 2;
+
+        // 盤面外なので位置をクランプ
+        const clampedPy = i === 0
+          ? Math.max(-this.cellSize / 2, py)
+          : Math.min(this.boardSize + this.cellSize / 2, py);
+
+        this.drawPieceAt(px, clampedPy, i, mobileState.placingPlayer === i, 1);
       } else {
         const px = player.x * this.cellSize + this.cellSize / 2;
         const py = player.y * this.cellSize + this.cellSize / 2;

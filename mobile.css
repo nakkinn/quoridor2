@@ -1,6 +1,6 @@
 /* ========================================
    Quoridor Mobile CSS
-   モダン・ミニマルデザイン
+   白基調のモダンデザイン
    ======================================== */
 
 * {
@@ -12,11 +12,10 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #1a1a2e;
-  color: #eee;
+  background: #f5f5f5;
+  color: #333;
   min-height: 100vh;
   overflow: hidden;
-  touch-action: none;
 }
 
 .hidden {
@@ -33,24 +32,38 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  touch-action: auto;
 }
 
 #popup-dialog {
-  background: #16213e;
+  background: #ffffff;
   border-radius: 20px;
   padding: 30px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   text-align: center;
-  min-width: 280px;
+  min-width: 300px;
+}
+
+.popup-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20px;
 }
 
 .popup-section {
   margin-bottom: 25px;
+}
+
+.popup-section-label {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 10px;
 }
 
 /* モード選択ボタン */
@@ -61,20 +74,29 @@ body {
 }
 
 .mode-btn, .turn-btn {
-  background: #0f3460;
-  border: 2px solid transparent;
-  border-radius: 15px;
-  padding: 15px 20px;
+  background: #f0f0f0;
+  border: 2px solid #ddd;
+  border-radius: 12px;
+  padding: 12px 20px;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
 }
 
 .mode-btn.selected, .turn-btn.selected {
-  border-color: #e94560;
-  background: #1a1a4e;
+  border-color: #3498db;
+  background: #e8f4fc;
+  color: #3498db;
 }
 
 .mode-btn:active, .turn-btn:active {
@@ -82,58 +104,36 @@ body {
 }
 
 .mode-icon {
-  font-size: 24px;
-}
-
-.mode-vs {
-  color: #888;
-  font-size: 14px;
+  font-size: 20px;
 }
 
 /* 先手/後手ボタン */
 .turn-btn {
-  flex-direction: column;
-  padding: 15px 25px;
-}
-
-.turn-color {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-}
-
-.turn-color.blue {
-  background: #3498db;
-  box-shadow: 0 0 15px rgba(52, 152, 219, 0.5);
-}
-
-.turn-color.red {
-  background: #e74c3c;
-  box-shadow: 0 0 15px rgba(231, 76, 60, 0.5);
-}
-
-.turn-btn span {
-  margin-top: 8px;
-  font-size: 18px;
-  color: #888;
+  min-width: 80px;
+  padding: 12px 24px;
 }
 
 /* 開始ボタン */
 .start-btn {
-  background: #e94560;
+  background: #3498db;
   border: none;
-  border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  font-size: 24px;
+  border-radius: 12px;
+  padding: 14px 40px;
+  font-size: 18px;
+  font-weight: bold;
   color: white;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 5px 20px rgba(233, 69, 96, 0.4);
+  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .start-btn:active {
-  transform: scale(0.9);
+  transform: scale(0.95);
+  box-shadow: 0 2px 10px rgba(52, 152, 219, 0.3);
 }
 
 /* ========================================
@@ -146,6 +146,8 @@ body {
   align-items: center;
   padding: 10px;
   height: 100vh;
+  touch-action: none;
+  background: #f5f5f5;
 }
 
 /* ヘッダー */
@@ -167,24 +169,29 @@ body {
   gap: 10px;
 }
 
-.icon-btn {
-  background: #0f3460;
-  border: none;
-  border-radius: 12px;
-  width: 44px;
-  height: 44px;
-  font-size: 20px;
+.text-btn {
+  background: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #555;
   cursor: pointer;
   transition: all 0.2s ease;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
-.icon-btn:active {
-  transform: scale(0.9);
-  background: #1a4a7a;
+.text-btn:active {
+  transform: scale(0.95);
+  background: #f0f0f0;
 }
 
-.icon-btn:disabled {
-  opacity: 0.3;
+.text-btn:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
@@ -195,41 +202,76 @@ body {
   align-items: center;
   padding: 8px 15px;
   gap: 10px;
+  background: #ffffff;
+  border-radius: 10px;
+  margin: 3px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: relative;
 }
 
 .player-icon {
-  font-size: 28px;
+  font-size: 24px;
+}
+
+.player-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
 }
 
 .walls-display {
   display: flex;
   gap: 4px;
+  margin-left: auto;
 }
 
 .wall-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #8B4513;
 }
 
 .wall-dot.used {
-  background: #333;
+  background: #ddd;
+}
+
+/* ローディングアニメーション（プレイヤー情報内） */
+.thinking-indicator {
+  display: flex;
+  gap: 4px;
+  margin-left: 10px;
+}
+
+.thinking-indicator span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3498db;
+  animation: thinking-bounce 1.4s infinite ease-in-out both;
+}
+
+.thinking-indicator span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.thinking-indicator span:nth-child(2) {
+  animation-delay: -0.16s;
 }
 
 /* ゴールライン */
 .goal-line {
   width: 100%;
-  height: 8px;
-  border-radius: 4px;
+  height: 6px;
+  border-radius: 3px;
 }
 
 .goal-line.blue {
-  background: linear-gradient(90deg, rgba(52, 152, 219, 0.3), rgba(52, 152, 219, 0.6), rgba(52, 152, 219, 0.3));
+  background: linear-gradient(90deg, rgba(52, 152, 219, 0.2), rgba(52, 152, 219, 0.5), rgba(52, 152, 219, 0.2));
 }
 
 .goal-line.red {
-  background: linear-gradient(90deg, rgba(231, 76, 60, 0.3), rgba(231, 76, 60, 0.6), rgba(231, 76, 60, 0.3));
+  background: linear-gradient(90deg, rgba(231, 76, 60, 0.2), rgba(231, 76, 60, 0.5), rgba(231, 76, 60, 0.2));
 }
 
 /* キャンバス */
@@ -239,6 +281,7 @@ body {
 
 #canvas-wrapper canvas {
   border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 /* 壁ドラッグ領域 */
@@ -247,31 +290,28 @@ body {
   display: flex;
   gap: 10px;
   padding: 10px;
-  margin-top: 10px;
+  margin-top: 5px;
 }
 
 .wall-zone {
   flex: 1;
-  height: 70px;
-  border-radius: 15px;
+  height: 60px;
+  border-radius: 12px;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   cursor: grab;
   transition: all 0.2s ease;
+  background: #ffffff;
+  border: 2px dashed #ccc;
+  gap: 5px;
 }
 
 .wall-zone:active {
   cursor: grabbing;
   transform: scale(0.98);
-}
-
-.vertical-zone {
-  background: linear-gradient(135deg, #2d2d44, #1a1a2e);
-}
-
-.horizontal-zone {
-  background: linear-gradient(135deg, #1a1a2e, #2d2d44);
+  border-color: #999;
 }
 
 .wall-zone.disabled {
@@ -282,57 +322,27 @@ body {
 /* 壁アイコン */
 .wall-icon {
   background: #8B4513;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 .wall-icon.vertical {
-  width: 8px;
-  height: 40px;
+  width: 6px;
+  height: 30px;
 }
 
 .wall-icon.horizontal {
-  width: 40px;
-  height: 8px;
+  width: 30px;
+  height: 6px;
+}
+
+.wall-label {
+  font-size: 12px;
+  color: #888;
 }
 
 /* ========================================
    CPU思考中アニメーション
    ======================================== */
-
-#thinking-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.3);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 500;
-  pointer-events: none;
-}
-
-.thinking-dots {
-  display: flex;
-  gap: 8px;
-}
-
-.thinking-dots span {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #e94560;
-  animation: thinking-bounce 1.4s infinite ease-in-out both;
-}
-
-.thinking-dots span:nth-child(1) {
-  animation-delay: -0.32s;
-}
-
-.thinking-dots span:nth-child(2) {
-  animation-delay: -0.16s;
-}
 
 @keyframes thinking-bounce {
   0%, 80%, 100% {
@@ -343,6 +353,11 @@ body {
     transform: scale(1);
     opacity: 1;
   }
+}
+
+/* 旧オーバーレイは非表示 */
+#thinking-overlay {
+  display: none !important;
 }
 
 /* ========================================
@@ -378,7 +393,7 @@ body {
 
 @media (max-height: 700px) {
   .wall-zone {
-    height: 55px;
+    height: 50px;
   }
 
   .player-info {
@@ -386,7 +401,7 @@ body {
   }
 
   .goal-line {
-    height: 6px;
+    height: 4px;
   }
 }
 
