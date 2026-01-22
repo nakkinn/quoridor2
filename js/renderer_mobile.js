@@ -33,12 +33,20 @@ class MobileRenderer {
     // 壁
     this.drawWalls(state);
 
+    // 壁アニメーション
+    if (mobileState.animation && mobileState.animation.type === 'wall') {
+      this.drawWallAnimation(mobileState.animation);
+    }
+
     // 配置フェーズ
     if (mobileState.placementPhase) {
       this.drawPlacementPhase(state, mobileState);
     } else {
-      // 移動可能マス（壁ドラッグ中は非表示）
-      if (state.mode === 'play' && state.winner === null && !mobileState.cpuThinking && !mobileState.draggingWall) {
+      // 移動可能マス（壁ドラッグ中、アニメーション中は非表示）
+      // 1人用モードではCPUのターン(player 0)は表示しない
+      const isHumanTurn = mobileState.gameMode === '2p' || state.currentPlayer === 1;
+      const isAnimating = mobileState.animation !== null;
+      if (state.mode === 'play' && state.winner === null && !mobileState.cpuThinking && !mobileState.draggingWall && isHumanTurn && !isAnimating) {
         this.drawValidMoves(state, mobileState);
       }
     }
@@ -228,6 +236,11 @@ class MobileRenderer {
     for (let i = 0; i < 2; i++) {
       const player = state.players[i];
 
+      // アニメーション中の駒かどうかチェック
+      const isAnimating = mobileState.animation &&
+                          mobileState.animation.type === 'move' &&
+                          mobileState.animation.playerIndex === i;
+
       // 配置されていない駒は盤面外に表示
       if (!state.piecePlaced[i]) {
         // 盤面外の位置（y=-1 または y=9）
@@ -241,12 +254,28 @@ class MobileRenderer {
           : Math.min(this.boardSize + this.cellSize / 2, py);
 
         this.drawPieceAt(px, clampedPy, i, mobileState.placingPlayer === i, 1);
+      } else if (isAnimating) {
+        // アニメーション中：補間位置に描画
+        const anim = mobileState.animation;
+        const t = this.easeOutCubic(anim.progress);
+        const fromPx = anim.fromX * this.cellSize + this.cellSize / 2;
+        const fromPy = anim.fromY * this.cellSize + this.cellSize / 2;
+        const toPx = anim.toX * this.cellSize + this.cellSize / 2;
+        const toPy = anim.toY * this.cellSize + this.cellSize / 2;
+        const px = fromPx + (toPx - fromPx) * t;
+        const py = fromPy + (toPy - fromPy) * t;
+        this.drawPieceAt(px, py, i, false, 1);
       } else {
         const px = player.x * this.cellSize + this.cellSize / 2;
         const py = player.y * this.cellSize + this.cellSize / 2;
         this.drawPieceAt(px, py, i, state.currentPlayer === i, 1);
       }
     }
+  }
+
+  // イージング関数（滑らかな減速）
+  easeOutCubic(t) {
+    return 1 - Math.pow(1 - t, 3);
   }
 
   // 駒を指定位置に描画
@@ -278,6 +307,50 @@ class MobileRenderer {
     if (previewPos) {
       const color = isValid ? '#8B4513' : '#e74c3c';
       this.drawWallAt(previewPos.wx, previewPos.wy, wallType, color, 180);
+    }
+  }
+
+  // 壁アニメーション描画
+  drawWallAnimation(animation) {
+    const p = this.p;
+    const { wx, wy, dir, progress } = animation;
+
+    // イージングを適用
+    const t = this.easeOutCubic(progress);
+
+    // 開始位置（盤面上部から）と終了位置を計算
+    const targetCx = (wx + 1) * this.cellSize;
+    const targetCy = (wy + 1) * this.cellSize;
+    const startCy = -this.cellSize;  // 盤面外上部から
+
+    // 補間
+    const cy = startCy + (targetCy - startCy) * t;
+
+    // 透明度もアニメーション
+    const alpha = Math.floor(100 + 155 * t);
+
+    // 壁を描画
+    p.fill(139, 69, 19, alpha);
+    p.noStroke();
+
+    const wallLen = this.cellSize * 2 - this.wallThickness;
+
+    if (dir === WALL_DIR.VERTICAL) {
+      p.rect(
+        targetCx - this.wallThickness / 2,
+        cy - this.cellSize + this.wallThickness / 2,
+        this.wallThickness,
+        wallLen,
+        3
+      );
+    } else if (dir === WALL_DIR.HORIZONTAL) {
+      p.rect(
+        targetCx - this.cellSize + this.wallThickness / 2,
+        cy - this.wallThickness / 2,
+        wallLen,
+        this.wallThickness,
+        3
+      );
     }
   }
 

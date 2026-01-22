@@ -40,6 +40,35 @@
 
       <!-- 開始ボタン -->
       <button id="btn-start-game" class="start-btn">スタート</button>
+
+      <!-- 遊び方ボタン -->
+      <button id="btn-help-popup" class="help-link">遊び方</button>
+    </div>
+  </div>
+
+  <!-- 遊び方ダイアログ -->
+  <div id="help-overlay" class="hidden">
+    <div id="help-dialog">
+      <div class="help-title">遊び方</div>
+      <div class="help-content">
+        <div class="help-section">
+          <div class="help-section-title">目的</div>
+          <p>相手より先に、反対側のゴールラインに到達すれば勝ちです。</p>
+        </div>
+        <div class="help-section">
+          <div class="help-section-title">駒の移動</div>
+          <p>盤面をドラッグして移動方向を選び、指を離すと移動します。上下左右に1マス移動できます。</p>
+        </div>
+        <div class="help-section">
+          <div class="help-section-title">壁の設置</div>
+          <p>画面下の壁アイコンをドラッグして盤面に配置します。壁は2マス分の長さがあり、相手の進路を妨害できます。各プレイヤー10枚まで。</p>
+        </div>
+        <div class="help-section">
+          <div class="help-section-title">壁のルール</div>
+          <p>相手がゴールに到達できなくなる壁は置けません。壁同士が交差する配置もできません。</p>
+        </div>
+      </div>
+      <button id="btn-help-close" class="help-close-btn">閉じる</button>
     </div>
   </div>
 
@@ -47,6 +76,9 @@
   <div id="game-container">
     <!-- ヘッダー -->
     <div id="header">
+      <div class="header-buttons-left">
+        <button id="btn-help" class="text-btn">遊び方</button>
+      </div>
       <div class="header-spacer"></div>
       <div class="header-buttons">
         <button id="btn-undo" class="text-btn">1手戻す</button>
@@ -58,11 +90,9 @@
     <div id="top-wall-area" class="wall-area hidden">
       <div class="wall-zone vertical-zone">
         <div class="wall-icon vertical"></div>
-        <span class="wall-label">縦壁</span>
       </div>
       <div class="wall-zone horizontal-zone">
         <div class="wall-icon horizontal"></div>
-        <span class="wall-label">横壁</span>
       </div>
     </div>
 
@@ -98,11 +128,9 @@
     <div id="bottom-wall-area" class="wall-area">
       <div class="wall-zone vertical-zone" id="drag-vertical">
         <div class="wall-icon vertical"></div>
-        <span class="wall-label">縦壁</span>
       </div>
       <div class="wall-zone horizontal-zone" id="drag-horizontal">
         <div class="wall-icon horizontal"></div>
-        <span class="wall-label">横壁</span>
       </div>
     </div>
   </div>

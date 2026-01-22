@@ -28,6 +28,10 @@ class MobileState {
     this.selectedMove = null;   // 選択中の移動先
     this.draggingWall = null;   // ドラッグ中の壁 {wallType, previewPos, isValid}
     this.globalTouchPos = null; // グローバルタッチ位置（壁ドラッグ用）
+
+    // CPUアニメーション状態
+    this.animation = null;      // {type: 'move'|'wall', ...params, progress: 0-1}
+    this.pendingMove = null;    // アニメーション完了後に実行する手
   }
 
   reset() {
@@ -40,6 +44,8 @@ class MobileState {
     this.selectedMove = null;
     this.draggingWall = null;
     this.globalTouchPos = null;
+    this.animation = null;
+    this.pendingMove = null;
   }
 }
 
@@ -54,12 +60,12 @@ class MoveHistory {
   }
 
   undo(count) {
+    // count回分のステートをpopし、最後にpopしたものを返す
+    let lastPopped = null;
     for (let i = 0; i < count && this.states.length > 0; i++) {
-      this.states.pop();
+      lastPopped = this.states.pop();
     }
-    return this.states.length > 0
-      ? this.states[this.states.length - 1].clone()
-      : null;
+    return lastPopped ? lastPopped.clone() : null;
   }
 
   canUndo(count) {
@@ -103,6 +109,9 @@ function setup() {
 }
 
 function draw() {
+  // アニメーション更新
+  updateAnimation();
+
   renderer.draw(gameState, mobileState);
 
   // ゲーム開始前は処理しない
@@ -163,11 +172,13 @@ function updateWallDragPreview() {
   // キャンバス上の座標を計算
   // 1人用: 上方向にオフセット（人間は下側）
   // 2人用: 上側プレイヤー(player 0)は下方向、下側プレイヤー(player 1)は上方向
+  // オフセット量を2倍に
   let yOffset;
   if (mobileState.gameMode === '2p') {
-    yOffset = gameState.currentPlayer === 0 ? 50 : -50;
+    // 上側プレイヤー(0)が操作時は下方向、下側プレイヤー(1)が操作時は上方向
+    yOffset = gameState.currentPlayer === 0 ? 100 : -100;
   } else {
-    yOffset = -50;  // 1人用は常に上方向
+    yOffset = -100;  // 1人用は常に上方向
   }
   const canvasX = mobileState.globalTouchPos.x - rect.left;
   const canvasY = mobileState.globalTouchPos.y - rect.top + yOffset;
@@ -276,6 +287,20 @@ function setupPopup() {
 
   // 開始ボタン
   addTapListener(document.getElementById('btn-start-game'), startGame);
+
+  // 遊び方ボタン（ポップアップ内）
+  addTapListener(document.getElementById('btn-help-popup'), showHelp);
+
+  // 遊び方閉じるボタン
+  addTapListener(document.getElementById('btn-help-close'), hideHelp);
+}
+
+function showHelp() {
+  document.getElementById('help-overlay').classList.remove('hidden');
+}
+
+function hideHelp() {
+  document.getElementById('help-overlay').classList.add('hidden');
 }
 
 function showPopup() {
@@ -413,6 +438,9 @@ function setupButtons() {
 
   addButtonTapListener(document.getElementById('btn-undo'), handleUndo);
 
+  // 遊び方ボタン
+  addButtonTapListener(document.getElementById('btn-help'), showHelp);
+
   // 壁ドラッグ領域のタッチイベント
   setupWallDragAreas();
 }
@@ -489,6 +517,7 @@ function startWallDrag(wallType, e) {
 
   if (!mobileState.gameStarted) return;
   if (mobileState.placementPhase) return;  // 配置フェーズ中は壁設置不可
+  if (mobileState.animation) return;  // アニメーション中は操作不可
 
   // 壁が残っているかチェック
   const player = gameState.players[gameState.currentPlayer];
@@ -549,6 +578,7 @@ function touchStarted() {
   if (!mobileState.gameStarted) return false;
   if (mobileState.cpuThinking) return false;
   if (gameState.winner !== null) return false;
+  if (mobileState.animation) return false;  // アニメーション中は操作不可
 
   // 壁ドラッグ中は駒の移動を開始しない
   if (mobileState.draggingWall) return false;
@@ -767,6 +797,7 @@ function handleCPU() {
   if (mobileState.gameMode !== '1p') return;
   if (gameState.winner !== null) return;
   if (mobileState.cpuThinking) return;
+  if (mobileState.animation) return;  // アニメーション中は待機
 
   // CPUのターンかチェック（CPUは常に player 0）
   if (gameState.currentPlayer !== 0) return;
@@ -789,16 +820,64 @@ function handleCPU() {
 
     if (result.move) {
       moveHistory.saveState(gameState);
+
+      // アニメーション開始
       if (result.move.type === 'move') {
-        executeMove(gameState, result.move.x, result.move.y);
+        const fromX = gameState.players[0].x;
+        const fromY = gameState.players[0].y;
+        mobileState.animation = {
+          type: 'move',
+          playerIndex: 0,
+          fromX: fromX,
+          fromY: fromY,
+          toX: result.move.x,
+          toY: result.move.y,
+          progress: 0,
+          startTime: Date.now(),
+          duration: 300  // 300msでアニメーション
+        };
+        // 実際の移動は後で実行（アニメーション完了後）
+        mobileState.pendingMove = result.move;
       } else if (result.move.type === 'wall') {
-        executeWallPlacement(gameState, result.move.wx, result.move.wy, result.move.dir);
+        // 壁のアニメーション（盤面外からスライドイン）
+        mobileState.animation = {
+          type: 'wall',
+          wx: result.move.wx,
+          wy: result.move.wy,
+          dir: result.move.dir,
+          progress: 0,
+          startTime: Date.now(),
+          duration: 300
+        };
+        mobileState.pendingMove = result.move;
       }
     }
 
     mobileState.cpuThinking = false;
     showThinking(false);
   }, config.delay);
+}
+
+// アニメーション更新
+function updateAnimation() {
+  if (!mobileState.animation) return;
+
+  const elapsed = Date.now() - mobileState.animation.startTime;
+  mobileState.animation.progress = Math.min(1, elapsed / mobileState.animation.duration);
+
+  // アニメーション完了
+  if (mobileState.animation.progress >= 1) {
+    const move = mobileState.pendingMove;
+    if (move) {
+      if (move.type === 'move') {
+        executeMove(gameState, move.x, move.y);
+      } else if (move.type === 'wall') {
+        executeWallPlacement(gameState, move.wx, move.wy, move.dir);
+      }
+    }
+    mobileState.animation = null;
+    mobileState.pendingMove = null;
+  }
 }
 
 function showThinking(show) {
