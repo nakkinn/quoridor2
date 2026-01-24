@@ -786,9 +786,9 @@ const cpuConfig = [
   // P1 (index 0)
   {
     enabled: false,           // CPU操作を有効にするか
-    depth: 2,                 // 探索深さ
+    depth: 3,                 // 探索深さ
     pruneThreshold: Infinity, // 枝刈り閾値
-    delay: 500,               // 手を打つまでの遅延(ms)
+    delay: 0,               // 手を打つまでの遅延(ms)
     useLockedDistance: true,  // 確定距離を計算するか
     eval: { ...DEFAULT_EVAL_PARAMS }  // 評価パラメータ
   },
@@ -797,26 +797,15 @@ const cpuConfig = [
     enabled: false,           // CPU操作を有効にするか
     depth: 3,                 // 探索深さ
     pruneThreshold: Infinity, // 枝刈り閾値
-    delay: 500,               // 手を打つまでの遅延(ms)
+    delay: 0,               // 手を打つまでの遅延(ms)
     useLockedDistance: false, // 確定距離を計算するか
     eval: { ...DEFAULT_EVAL_PARAMS }  // 評価パラメータ
   }
 ];
 
-cpuConfig[1].eval.wallValue = 0.5;
+cpuConfig[0].eval.wallValue = 0.6;
 
-/*設定カスタマイズ例
-// P2の壁評価を二乗にして、壁を大事にさせる
-cpuConfig[1].eval.wallPower = 2;
-cpuConfig[1].eval.wallValue = 0.1;
 
-// P1の壁価値を上げる
-cpuConfig[0].eval.wallValue = 1.0;
-
-// 設定を確認
-console.log(cpuConfig[0].eval);
-console.log(cpuConfig[1].eval);
-*/
 
 
 // 共通設定
@@ -828,6 +817,8 @@ const cpuCommonConfig = {
 const searchStats = {
   nodesPerDepth: [],  // 深さごとのノード数
   totalNodes: 0,      // 総ノード数
+  betaCutoffs: 0,     // ベータカット回数
+  alphaCutoffs: 0,    // アルファカット回数
   startTime: 0,       // 開始時刻
   endTime: 0,         // 終了時刻
   maxDepth: 0         // 今回の探索深さ（ログ用）
@@ -840,6 +831,8 @@ const searchStats = {
 function resetSearchStats(maxDepth) {
   searchStats.nodesPerDepth = [];
   searchStats.totalNodes = 0;
+  searchStats.betaCutoffs = 0;
+  searchStats.alphaCutoffs = 0;
   searchStats.startTime = performance.now();
   searchStats.maxDepth = maxDepth;
 }
@@ -859,6 +852,7 @@ function logSearchStats(playerIndex, bestMove, score) {
     console.log(`  Depth ${i + 1}: ${count.toLocaleString()} nodes`);
   });
   console.log(`  Total: ${searchStats.totalNodes.toLocaleString()} nodes`);
+  console.log(`  Cutoffs: α=${searchStats.alphaCutoffs}, β=${searchStats.betaCutoffs}`);
   console.log(`  Time: ${elapsed.toFixed(0)}ms`);
   console.log(`  Best: ${formatMove(bestMove)}, Score: ${score.toFixed(1)}`);
 }
@@ -906,6 +900,66 @@ function getAllLegalMoves(state) {
   }
 
   return moves;
+}
+
+/**
+ * Move Ordering: 手を評価値順に並び替える
+ * アルファベータ枝刈りの効率を上げるため、良い手を先に探索する
+ * @param {GameState} state - 現在の状態
+ * @param {Array} moves - 合法手の配列
+ * @returns {Array} 並び替えられた手の配列
+ */
+function orderMoves(state, moves) {
+  const playerIndex = state.currentPlayer;
+  const player = state.players[playerIndex];
+  const goalY = playerIndex === 0 ? 8 : 0;
+
+  // 現在の距離を計算
+  const distanceMap = getDistanceMap(state.walls, goalY);
+  const currentDist = distanceMap[player.y][player.x];
+
+  // 各手にスコアを付ける
+  const scoredMoves = moves.map(move => {
+    let score = 0;
+
+    if (move.type === 'move') {
+      const newDist = distanceMap[move.y][move.x];
+
+      // ゴールに到達する手は最優先
+      if (move.y === goalY) {
+        score = 10000;
+      }
+      // ゴールに近づく手は高優先
+      else if (newDist < currentDist) {
+        score = 1000 + (currentDist - newDist) * 100;
+      }
+      // 距離が変わらない手
+      else if (newDist === currentDist) {
+        score = 500;
+      }
+      // 距離が遠ざかる手は低優先
+      else {
+        score = 100;
+      }
+    } else if (move.type === 'wall') {
+      // 壁の評価（相手の距離増加 - 自分の距離増加）
+      const wallScore = evaluateWallPlacement(state, move.wx, move.wy, move.dir);
+      if (wallScore !== null) {
+        // 壁スコアを0-500の範囲にマッピング（移動より低い優先度）
+        score = Math.max(0, Math.min(500, 250 + wallScore * 50));
+      } else {
+        score = 0;
+      }
+    }
+
+    return { move, score };
+  });
+
+  // スコア降順でソート
+  scoredMoves.sort((a, b) => b.score - a.score);
+
+  // 手のみを返す
+  return scoredMoves.map(sm => sm.move);
 }
 
 /**
@@ -979,12 +1033,15 @@ function minmax(state, depth, alpha, beta, isMaximizing, originalPlayer, pruneTh
   searchStats.totalNodes++;
 
   // 全合法手を取得
-  const moves = getAllLegalMoves(state);
+  let moves = getAllLegalMoves(state);
 
   if (moves.length === 0) {
     // 合法手がない（通常は発生しない）
     return { move: null, score: evaluate(state, originalPlayer, useLockedDistance, evalParams) };
   }
+
+  // Move Ordering: 良い手を先に探索してアルファベータ枝刈りを効率化
+  moves = orderMoves(state, moves);
 
   if (isMaximizing) {
     // 自分の手番: 最大化
@@ -1004,6 +1061,7 @@ function minmax(state, depth, alpha, beta, isMaximizing, originalPlayer, pruneTh
 
       // ベータカット（枝刈り）
       if (beta <= alpha) {
+        searchStats.betaCutoffs++;
         break;
       }
 
@@ -1033,6 +1091,7 @@ function minmax(state, depth, alpha, beta, isMaximizing, originalPlayer, pruneTh
 
       // アルファカット（枝刈り）
       if (beta <= alpha) {
+        searchStats.alphaCutoffs++;
         break;
       }
 
