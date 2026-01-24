@@ -787,7 +787,7 @@ const cpuConfig = [
   {
     enabled: false,           // CPU操作を有効にするか
     depth: 3,                 // 探索深さ
-    pruneThreshold: Infinity, // 枝刈り閾値
+    pruneThreshold: 500, // 枝刈り閾値
     delay: 0,               // 手を打つまでの遅延(ms)
     useLockedDistance: true,  // 確定距離を計算するか
     eval: { ...DEFAULT_EVAL_PARAMS }  // 評価パラメータ

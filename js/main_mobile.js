@@ -8,6 +8,7 @@ let mobileState;
 let renderer;
 let canvasSize;
 let moveHistory;
+let cpuWorker = null;
 
 // モバイル状態
 class MobileState {
@@ -103,10 +104,88 @@ function setup() {
   // グローバルタッチイベント（壁ドラッグ用）
   setupGlobalTouchEvents();
 
+  // CPU Worker初期化
+  setupCPUWorker();
+
   setupPopup();
   setupButtons();
   setupWinnerDialog();
   showPopup();
+}
+
+// CPU Worker初期化
+function setupCPUWorker() {
+  try {
+    cpuWorker = new Worker('js/cpu_worker.js');
+    cpuWorker.onmessage = handleCPUWorkerMessage;
+    cpuWorker.onerror = function(e) {
+      console.error('CPU Worker error:', e);
+      cpuWorker = null;  // フォールバック用
+    };
+  } catch (e) {
+    console.warn('Web Worker not supported, using main thread');
+    cpuWorker = null;
+  }
+}
+
+// CPU Workerからのメッセージ処理
+function handleCPUWorkerMessage(e) {
+  const { type, data } = e.data;
+
+  if (type === 'result') {
+    const { move, score, stats } = data;
+
+    if (cpuCommonConfig.enableLogging) {
+      console.log(`=== P1 Min-Max (depth=${stats.maxDepth}) [Worker] ===`);
+      stats.nodesPerDepth.forEach((count, i) => {
+        console.log(`  Depth ${i + 1}: ${count.toLocaleString()} nodes`);
+      });
+      console.log(`  Total: ${stats.totalNodes.toLocaleString()} nodes`);
+      console.log(`  Cutoffs: α=${stats.alphaCutoffs}, β=${stats.betaCutoffs}`);
+      const elapsed = stats.endTime - stats.startTime;
+      console.log(`  Time: ${elapsed.toFixed(0)}ms`);
+    }
+
+    if (move) {
+      moveHistory.saveState(gameState);
+
+      if (move.type === 'move') {
+        const fromX = gameState.players[0].x;
+        const fromY = gameState.players[0].y;
+
+        recordLastMove(0, { type: 'move', x: move.x, y: move.y, fromX: fromX, fromY: fromY });
+
+        mobileState.animation = {
+          type: 'move',
+          playerIndex: 0,
+          fromX: fromX,
+          fromY: fromY,
+          toX: move.x,
+          toY: move.y,
+          progress: 0,
+          startTime: Date.now(),
+          duration: 300
+        };
+        mobileState.pendingMove = move;
+      } else if (move.type === 'wall') {
+        recordLastMove(0, { type: 'wall', wx: move.wx, wy: move.wy, dir: move.dir });
+
+        mobileState.animation = {
+          type: 'wall',
+          wx: move.wx,
+          wy: move.wy,
+          dir: move.dir,
+          progress: 0,
+          startTime: Date.now(),
+          duration: 300
+        };
+        mobileState.pendingMove = move;
+      }
+    }
+
+    mobileState.cpuThinking = false;
+    showThinking(false);
+  }
 }
 
 // 勝利ダイアログ表示済みフラグ
@@ -338,6 +417,9 @@ function startGame() {
   mobileState.reset();
   moveHistory.clear();
   clearLastMoveHistory();
+  if (cpuWorker) {
+    cpuWorker.postMessage({ type: 'clearHistory' });
+  }
 
   // 配置フェーズを開始
   // Player 0 (青): y=0 (画面上側)
@@ -479,6 +561,9 @@ function handleUndo() {
       mobileState.gameStarted = true;
       // 戻り手履歴もクリア
       clearLastMoveHistory();
+      if (cpuWorker) {
+        cpuWorker.postMessage({ type: 'clearHistory' });
+      }
     }
   }
 }
@@ -953,6 +1038,33 @@ function handleCPU() {
   // CPUの設定を取得（CPU は player 0）
   const config = cpuConfig[0];
 
+  // Web Workerが使用可能な場合
+  if (cpuWorker) {
+    // 状態をシリアライズ可能な形式に変換
+    const stateData = {
+      players: gameState.players.map(p => ({ x: p.x, y: p.y, wallsLeft: p.wallsLeft })),
+      walls: gameState.walls.map(row => [...row]),
+      currentPlayer: gameState.currentPlayer,
+      winner: gameState.winner
+    };
+
+    cpuWorker.postMessage({
+      type: 'search',
+      data: {
+        state: stateData,
+        config: {
+          depth: config.depth,
+          pruneThreshold: config.pruneThreshold,
+          useLockedDistance: config.useLockedDistance,
+          eval: config.eval
+        },
+        lastMove: lastMoveHistory ? lastMoveHistory[0] : null
+      }
+    });
+    return;
+  }
+
+  // フォールバック: メインスレッドで実行
   cpuMoveTimeout = setTimeout(() => {
     if (gameState.winner !== null) {
       mobileState.cpuThinking = false;
@@ -965,12 +1077,10 @@ function handleCPU() {
     if (result.move) {
       moveHistory.saveState(gameState);
 
-      // アニメーション開始
       if (result.move.type === 'move') {
         const fromX = gameState.players[0].x;
         const fromY = gameState.players[0].y;
 
-        // 前回の手を記録（移動元の位置も含める）
         recordLastMove(0, { type: 'move', x: result.move.x, y: result.move.y, fromX: fromX, fromY: fromY });
 
         mobileState.animation = {
@@ -982,15 +1092,12 @@ function handleCPU() {
           toY: result.move.y,
           progress: 0,
           startTime: Date.now(),
-          duration: 300  // 300msでアニメーション
+          duration: 300
         };
-        // 実際の移動は後で実行（アニメーション完了後）
         mobileState.pendingMove = result.move;
       } else if (result.move.type === 'wall') {
-        // 前回の手を記録（壁設置）
         recordLastMove(0, { type: 'wall', wx: result.move.wx, wy: result.move.wy, dir: result.move.dir });
 
-        // 壁のアニメーション（盤面外からスライドイン）
         mobileState.animation = {
           type: 'wall',
           wx: result.move.wx,
