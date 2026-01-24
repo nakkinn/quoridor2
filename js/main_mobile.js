@@ -272,6 +272,7 @@ function updateWallDragPreview() {
   } else {
     yOffset = -100;  // 1人用は常に上方向
   }
+  console.log('yOffset:', yOffset, "currentPlayer:", gameState.currentPlayer);
   const canvasX = mobileState.globalTouchPos.x - rect.left;
   const canvasY = mobileState.globalTouchPos.y - rect.top + yOffset;
 
@@ -301,6 +302,10 @@ function handleWallDrop() {
   if (previewPos && isValid) {
     moveHistory.saveState(gameState);
     executeWallPlacement(gameState, previewPos.wx, previewPos.wy, wallType);
+    // 1人モードでは次がCPUの手番なのでボタンを即座に無効化
+    if (mobileState.gameMode === '1p') {
+      document.getElementById('btn-undo').disabled = true;
+    }
   }
 
   mobileState.draggingWall = null;
@@ -549,6 +554,12 @@ function handleUndo() {
   if (mobileState.placementPhase) return;  // 配置フェーズ中はUndo不可
 
   const undoCount = mobileState.gameMode === '1p' ? 2 : 1;
+
+  //1人モードでCPUの手番ならば無効
+  if (mobileState.gameMode === '1p' && gameState.currentPlayer === 0) {
+    undoBtn.disabled = true;
+    return;
+  }
 
   if (moveHistory.canUndo(undoCount)) {
     const prevState = moveHistory.undo(undoCount);
@@ -892,6 +903,10 @@ function touchEnded() {
         // 移動確定
         moveHistory.saveState(gameState);
         executeMove(gameState, mobileState.selectedMove.x, mobileState.selectedMove.y);
+        // 1人モードでは次がCPUの手番なのでボタンを即座に無効化
+        if (mobileState.gameMode === '1p') {
+          document.getElementById('btn-undo').disabled = true;
+        }
       }
     }
 
@@ -1007,6 +1022,7 @@ function handleCPUPlacement() {
   // CPU思考開始
   mobileState.cpuThinking = true;
   showThinking(true);
+  updateUndoButton();
 
   const config = cpuConfig[0];
 
@@ -1017,6 +1033,7 @@ function handleCPUPlacement() {
 
     mobileState.cpuThinking = false;
     showThinking(false);
+    updateUndoButton();
   }, config.delay);
 }
 
@@ -1034,6 +1051,7 @@ function handleCPU() {
   // CPU思考開始
   mobileState.cpuThinking = true;
   showThinking(true);
+  updateUndoButton();
 
   // CPUの設定を取得（CPU は player 0）
   const config = cpuConfig[0];
@@ -1069,6 +1087,7 @@ function handleCPU() {
     if (gameState.winner !== null) {
       mobileState.cpuThinking = false;
       showThinking(false);
+      updateUndoButton();
       return;
     }
 
@@ -1113,6 +1132,7 @@ function handleCPU() {
 
     mobileState.cpuThinking = false;
     showThinking(false);
+    updateUndoButton();
   }, config.delay);
 }
 
@@ -1183,6 +1203,13 @@ function updateUndoButton() {
   const undoBtn = document.getElementById('btn-undo');
 
   if (mobileState.placementPhase) {
+    undoBtn.disabled = true;
+    return;
+  }
+
+  // 1人モードでCPUの手番またはCPU思考中は無効
+  if (mobileState.gameMode === '1p' &&
+      (gameState.currentPlayer === 0 || mobileState.cpuThinking)) {
     undoBtn.disabled = true;
     return;
   }

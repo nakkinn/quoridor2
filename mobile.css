@@ -262,6 +262,13 @@ body {
   margin: 0;
 }
 
+#help-version {
+  text-align: right;
+  font-size: 11px;
+  color: #999;
+  margin-top: 15px;
+}
+
 .help-close-btn {
   display: block;
   width: 100%;

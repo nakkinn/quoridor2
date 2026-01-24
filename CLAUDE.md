@@ -2,6 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## バージョン管理
+
+**現在のバージョン: 1.2**
+
+- コードに変更を加えるたびにバージョン番号を1ずつ増やすこと
+- バージョン番号は `index.html` の遊び方ダイアログ内にも表示されている（`help-version`要素）
+- 両方を同時に更新すること
+
 ## Important Restrictions
 
 **Do not reference or edit files outside of this directory (ver2).** Parent directories and sibling folders are off-limits.
