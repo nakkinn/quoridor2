@@ -40,7 +40,11 @@ class MobileRenderer {
 
     // 配置フェーズ
     if (mobileState.placementPhase) {
-      this.drawPlacementPhase(state, mobileState);
+      // 1人用モードではCPUのターン(player 0)は表示しない
+      const isHumanPlacement = mobileState.gameMode === '2p' || mobileState.placingPlayer === 1;
+      if (isHumanPlacement) {
+        this.drawPlacementPhase(state, mobileState);
+      }
     } else {
       // 移動可能マス（壁ドラッグ中、アニメーション中は非表示）
       // 1人用モードではCPUのターン(player 0)は表示しない
@@ -354,23 +358,9 @@ class MobileRenderer {
     }
   }
 
-  // 勝者表示
+  // 勝者表示（HTMLダイアログに移行したため空実装）
   drawWinner(winner) {
-    const p = this.p;
-    const color = winner === 0 ? '#3498db' : '#e74c3c';
-
-    p.fill(0, 0, 0, 180);
-    p.noStroke();
-    p.rect(0, 0, this.boardSize, this.boardSize);
-
-    // 王冠
-    p.textSize(48);
-    p.textAlign(p.CENTER, p.CENTER);
-    p.text('👑', this.boardSize / 2, this.boardSize / 2 - 30);
-
-    // 勝者の色の円
-    p.fill(color);
-    p.circle(this.boardSize / 2, this.boardSize / 2 + 30, 40);
+    // 勝者表示はHTMLダイアログで行う
   }
 
   // ピクセル座標からセル座標に変換

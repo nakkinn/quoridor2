@@ -105,8 +105,12 @@ function setup() {
 
   setupPopup();
   setupButtons();
+  setupWinnerDialog();
   showPopup();
 }
+
+// 勝利ダイアログ表示済みフラグ
+let winnerDialogShown = false;
 
 function draw() {
   // アニメーション更新
@@ -116,6 +120,15 @@ function draw() {
 
   // ゲーム開始前は処理しない
   if (!mobileState.gameStarted) return;
+
+  // 勝者が決まった時、ダイアログを表示
+  if (gameState.winner !== null && !winnerDialogShown) {
+    winnerDialogShown = true;
+    // 少し遅延させてから表示
+    setTimeout(() => {
+      showWinnerDialog(gameState.winner);
+    }, 500);
+  }
 
   updateUI();
 
@@ -317,10 +330,14 @@ function hidePopup() {
 function startGame() {
   hidePopup();
 
+  // 勝利ダイアログフラグをリセット
+  winnerDialogShown = false;
+
   // ゲーム状態をリセット
   gameState.reset();
   mobileState.reset();
   moveHistory.clear();
+  clearLastMoveHistory();
 
   // 配置フェーズを開始
   // Player 0 (青): y=0 (画面上側)
@@ -460,8 +477,134 @@ function handleUndo() {
       gameState.winner = prevState.winner;
       mobileState.reset();
       mobileState.gameStarted = true;
+      // 戻り手履歴もクリア
+      clearLastMoveHistory();
     }
   }
+}
+
+// ========================================
+// 勝利ダイアログ
+// ========================================
+
+function setupWinnerDialog() {
+  function addTapListener(element, callback) {
+    let touchStartTime = 0;
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    element.addEventListener('touchstart', (e) => {
+      touchStartTime = Date.now();
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    element.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      const touchDuration = Date.now() - touchStartTime;
+      const touch = e.changedTouches[0];
+      const dx = touch.clientX - touchStartX;
+      const dy = touch.clientY - touchStartY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (touchDuration < 500 && distance < 20) {
+        callback();
+      }
+    }, { passive: false });
+
+    element.addEventListener('click', (e) => {
+      if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) {
+        return;
+      }
+      callback();
+    });
+  }
+
+  // モード選択ボタン
+  addTapListener(document.getElementById('btn-mode-1p-win'), () => {
+    mobileState.gameMode = '1p';
+    document.getElementById('btn-mode-1p-win').classList.add('selected');
+    document.getElementById('btn-mode-2p-win').classList.remove('selected');
+    document.getElementById('turn-selection-win').classList.remove('hidden');
+  });
+
+  addTapListener(document.getElementById('btn-mode-2p-win'), () => {
+    mobileState.gameMode = '2p';
+    document.getElementById('btn-mode-2p-win').classList.add('selected');
+    document.getElementById('btn-mode-1p-win').classList.remove('selected');
+    document.getElementById('turn-selection-win').classList.add('hidden');
+  });
+
+  // 先手/後手選択
+  addTapListener(document.getElementById('btn-first-win'), () => {
+    mobileState.playerFirst = true;
+    document.getElementById('btn-first-win').classList.add('selected');
+    document.getElementById('btn-second-win').classList.remove('selected');
+  });
+
+  addTapListener(document.getElementById('btn-second-win'), () => {
+    mobileState.playerFirst = false;
+    document.getElementById('btn-second-win').classList.add('selected');
+    document.getElementById('btn-first-win').classList.remove('selected');
+  });
+
+  // 開始ボタン
+  addTapListener(document.getElementById('btn-start-game-win'), () => {
+    hideWinnerDialog();
+    startGame();
+  });
+
+  // 遊び方ボタン
+  addTapListener(document.getElementById('btn-help-win'), showHelp);
+}
+
+function showWinnerDialog(winner) {
+  const winnerText = document.getElementById('winner-text');
+  const overlay = document.getElementById('winner-overlay');
+
+  // 勝者テキストを設定
+  if (mobileState.gameMode === '1p') {
+    if (winner === 1) {
+      winnerText.textContent = 'あなたの勝利！';
+      winnerText.className = 'winner-text red';
+    } else {
+      winnerText.textContent = 'CPUの勝利...';
+      winnerText.className = 'winner-text blue';
+    }
+  } else {
+    if (winner === 0) {
+      winnerText.textContent = 'プレイヤー1の勝利！';
+      winnerText.className = 'winner-text blue';
+    } else {
+      winnerText.textContent = 'プレイヤー2の勝利！';
+      winnerText.className = 'winner-text red';
+    }
+  }
+
+  // ダイアログの選択状態を現在のモードに合わせる
+  if (mobileState.gameMode === '1p') {
+    document.getElementById('btn-mode-1p-win').classList.add('selected');
+    document.getElementById('btn-mode-2p-win').classList.remove('selected');
+    document.getElementById('turn-selection-win').classList.remove('hidden');
+  } else {
+    document.getElementById('btn-mode-2p-win').classList.add('selected');
+    document.getElementById('btn-mode-1p-win').classList.remove('selected');
+    document.getElementById('turn-selection-win').classList.add('hidden');
+  }
+
+  if (mobileState.playerFirst) {
+    document.getElementById('btn-first-win').classList.add('selected');
+    document.getElementById('btn-second-win').classList.remove('selected');
+  } else {
+    document.getElementById('btn-second-win').classList.add('selected');
+    document.getElementById('btn-first-win').classList.remove('selected');
+  }
+
+  overlay.classList.remove('hidden');
+}
+
+function hideWinnerDialog() {
+  document.getElementById('winner-overlay').classList.add('hidden');
 }
 
 // ========================================
@@ -635,7 +778,7 @@ function touchMoved() {
     if (mobileState.placementPhase) {
       // 配置フェーズ: 横方向のみ考慮
       const validPositions = getValidStartPositions(mobileState.placingPlayer);
-      mobileState.selectedMove = selectPlacementByDrag(dx, validPositions);
+      mobileState.selectedMove = selectPlacementByDrag(dx, dy, validPositions);
     } else {
       // 通常フェーズ
       const validMoves = getValidMoves(gameState);
@@ -688,13 +831,14 @@ function getValidStartPositions(playerIndex) {
 }
 
 // ドラッグ変位から配置位置を選択（横方向のみ）
-function selectPlacementByDrag(dx, validPositions) {
+function selectPlacementByDrag(dx, dy, validPositions) {
   if (validPositions.length === 0) return null;
 
-  // 変位が小さい場合は中央（x=4）
+  // 変位が小さい場合はキャンセル（選択なし）
   const threshold = renderer.cellSize * 0.3;
-  if (Math.abs(dx) < threshold) {
-    return validPositions.find(p => p.x === 4) || validPositions[4];
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist < threshold) {
+    return null;
   }
 
   // ドラッグ量に応じてx位置を決定
@@ -825,6 +969,10 @@ function handleCPU() {
       if (result.move.type === 'move') {
         const fromX = gameState.players[0].x;
         const fromY = gameState.players[0].y;
+
+        // 前回の手を記録（移動元の位置も含める）
+        recordLastMove(0, { type: 'move', x: result.move.x, y: result.move.y, fromX: fromX, fromY: fromY });
+
         mobileState.animation = {
           type: 'move',
           playerIndex: 0,
@@ -839,6 +987,9 @@ function handleCPU() {
         // 実際の移動は後で実行（アニメーション完了後）
         mobileState.pendingMove = result.move;
       } else if (result.move.type === 'wall') {
+        // 前回の手を記録（壁設置）
+        recordLastMove(0, { type: 'wall', wx: result.move.wx, wy: result.move.wy, dir: result.move.dir });
+
         // 壁のアニメーション（盤面外からスライドイン）
         mobileState.animation = {
           type: 'wall',

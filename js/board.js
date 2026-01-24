@@ -1046,6 +1046,26 @@ function minmax(state, depth, alpha, beta, isMaximizing, originalPlayer, pruneTh
   }
 }
 
+// 前回の手を記録（プレイヤーごと）
+const lastMoveHistory = [null, null];
+
+/**
+ * 前回の手を記録
+ * @param {number} playerIndex - プレイヤー番号
+ * @param {Object} move - 手（{type, x, y} or {type, wx, wy, dir}）
+ */
+function recordLastMove(playerIndex, move) {
+  lastMoveHistory[playerIndex] = move;
+}
+
+/**
+ * 前回の手をクリア
+ */
+function clearLastMoveHistory() {
+  lastMoveHistory[0] = null;
+  lastMoveHistory[1] = null;
+}
+
 /**
  * Min-Max探索で最適手を返す
  * @param {GameState} state - 現在の状態
@@ -1068,6 +1088,46 @@ function getBestMoveMinMax(state, depth, pruneThreshold, useLockedDistance, eval
   resetSearchStats(actualDepth);
 
   const result = minmax(state, actualDepth, -Infinity, Infinity, true, playerIndex, actualPruneThreshold, actualUseLockedDistance, actualEvalParams);
+
+  // 戻り手ペナルティの適用（前回が移動で、同じ位置に戻る場合）
+  const lastMove = lastMoveHistory[playerIndex];
+  if (result.move && result.move.type === 'move' && lastMove && lastMove.type === 'move') {
+    // 前回の移動元（現在の位置）に戻る手かチェック
+    const currentPos = state.players[playerIndex];
+    if (result.move.x === lastMove.fromX && result.move.y === lastMove.fromY) {
+      // 戻り手にペナルティを与えて、他の手を探す
+      const penalizedScore = result.score - 20;
+
+      // 他の手を探す
+      const moves = getAllLegalMoves(state);
+      let bestAlternative = null;
+      let bestAltScore = -Infinity;
+
+      for (const move of moves) {
+        // 戻り手以外を評価
+        if (move.type === 'move' && move.x === lastMove.fromX && move.y === lastMove.fromY) {
+          continue;
+        }
+
+        const newState = applyMoveToState(state, move);
+        const score = evaluate(newState, playerIndex, actualUseLockedDistance, actualEvalParams);
+
+        if (score > bestAltScore) {
+          bestAltScore = score;
+          bestAlternative = move;
+        }
+      }
+
+      // 代替手がペナルティ後のスコアより良ければ採用
+      if (bestAlternative && bestAltScore > penalizedScore) {
+        if (cpuCommonConfig.enableLogging) {
+          console.log(`  Avoided return move: (${result.move.x}, ${result.move.y}) -> (${bestAlternative.type === 'move' ? bestAlternative.x + ',' + bestAlternative.y : 'wall'})`);
+        }
+        result.move = bestAlternative;
+        result.score = bestAltScore;
+      }
+    }
+  }
 
   if (cpuCommonConfig.enableLogging) {
     logSearchStats(playerIndex, result.move, result.score);
